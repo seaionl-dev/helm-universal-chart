@@ -4,7 +4,7 @@ on:
     branches: [ main ]
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: azure-prod-runner-vmss
     permissions:
       contents: write
     steps:
