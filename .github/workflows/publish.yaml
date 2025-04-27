@@ -38,6 +38,7 @@ jobs:
           kubelogin convert-kubeconfig -l msi
       - name: Helm Template Dry Run (Render Only)
         run: |
-          helm template dry-run-release charts/base-app \
-            --namespace default \
-            -f charts/base-app/values.yaml
+          helm upgrade --install dry-run-release charts/base-app \
+              --namespace default \
+              -f charts/base-app/values.yaml \
+              --dry-run --debug
