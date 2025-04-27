@@ -1,0 +1,169 @@
+# Default values for the base-app Helm chart.
+# This file contains default values and is fully commented to describe each field.
+
+# Global settings
+nameOverride: ""        # Provide a name to override the chart's name for resources
+fullnameOverride: ""    # Provide a full name for resources (if set, it overrides the release-name and chart name combo)
+
+# Replica count for the Deployment
+replicaCount: 1
+
+# Container image configuration
+image:
+  repository: nginx    # Docker image repository for the application
+  tag: "latest"        # Docker image tag
+  pullPolicy: IfNotPresent  # Image pull policy
+
+# Image pull secrets for private image registries
+imagePullSecrets: []    # (Optional) list of names of Kubernetes secrets for pulling images
+
+# Service account configuration
+serviceAccount:
+  create: true         # Whether to create a new ServiceAccount
+  name: ""             # Name of the ServiceAccount to use. If not set and create=true, a name is generated using the release name.
+
+# Pod annotations (e.g., for monitoring or sidecar injection)
+podAnnotations: {}
+
+# Security contexts
+podSecurityContext: {}   # Security context for the pod (e.g., runAsUser, fsGroup)
+securityContext: {}      # Security context for the container (e.g., capabilities, runAsUser)
+
+# Service configuration
+service:
+  enabled: true         # Whether to create a Service
+  type: ClusterIP       # Kubernetes service type (ClusterIP, NodePort, LoadBalancer)
+  port: 80              # Service port to expose
+  targetPort: 80        # Container port to target (defaults to containerPort if not set)
+  # Note: To map a different service port to container port, adjust port and targetPort accordingly.
+
+# Container port (the port the application container listens on)
+containerPort: 80
+
+# Ingress (Traefik IngressRoute) configuration
+ingress:
+  enabled: true        # Enable Traefik IngressRoute
+  host: ""             # Hostname for the ingress route (e.g., myapp.example.com)
+  path: /              # Path prefix for the ingress route
+  entryPoints:         # Traefik entry points to listen on
+    - web
+  tls:
+    enabled: false     # Enable TLS for the ingress route
+    secretName: ""     # Name of the TLS secret (if already provisioned)
+    certResolver: ""   # If using Traefik's ACME, specify the certResolver name instead of a secret
+  annotations: {}      # Annotations for the IngressRoute (if any)
+
+# Resources (CPU/memory) for the main container
+resources: {}          # e.g.,
+# resources:
+#   limits:
+#     cpu: 100m
+#     memory: 128Mi
+#   requests:
+#     cpu: 50m
+#     memory: 64Mi
+
+# Node scheduling configurations
+nodeSelector: {}       # Node selector for pod assignment
+tolerations: []        # Tolerations for pod assignment
+affinity: {}           # Affinity rules for pod assignment
+
+# Environment variables for the main container
+env: []                # List of environment variables (e.g., [{name: FOO, value: BAR}])
+envFrom: []            # List of sources to populate env vars (e.g., configMapRef or secretRef)
+# Example:
+# env:
+#   - name: MY_VARIABLE
+#     value: "some-value"
+# envFrom:
+#   - configMapRef:
+#       name: my-config
+#   - secretRef:
+#       name: my-secret
+
+# Liveness and readiness probes (health checks)
+livenessProbe:
+  enabled: true
+  path: /
+  port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  path: /
+  port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+# Persistent Volume Claim (PVC) for data persistence
+persistence:
+  enabled: false              # Enable persistence (PVC)
+  name: data                  # Name identifier for the PVC (used in resource naming)
+  existingClaim: ""           # If specified, use this existing PVC name and do not create a new one
+  storageClass: ""            # StorageClass for the PVC (if empty, use default)
+  accessModes: ["ReadWriteOnce"]  # Access modes for the PVC
+  size: 1Gi                   # Size of the volume
+  mountPath: "/data"          # Container path to mount the volume
+
+# Job (one-time batch job) configuration
+job:
+  enabled: false             # If true, create a Job
+  image:
+    repository: ""          # (Optional) image for the job; if empty, defaults to the main application image
+    tag: ""                 # (Optional) image tag for the job
+  command: []               # (Optional) command override for the job container
+  args: []                  # (Optional) args for the job container
+  env: []                   # Environment variables specifically for the job
+  restartPolicy: OnFailure  # Restart policy for the job (OnFailure or Never)
+  backoffLimit: 6           # Backoff limit for job retries
+  completions: 1            # Number of completions (jobs to run)
+  parallelism: 1            # Parallelism (how many pods can run at once)
+
+# CronJob (scheduled job) configuration
+cronjob:
+  enabled: false             # If true, create a CronJob
+  schedule: "*/5 * * * *"    # Cron schedule (default: every 5 minutes)
+  successfulJobsHistoryLimit: 3  # Number of successful job runs to keep
+  failedJobsHistoryLimit: 1      # Number of failed job runs to keep
+  concurrencyPolicy: Allow       # Concurrency policy (Allow, Forbid, Replace)
+  suspend: false                # If true, suspend the cronjob
+  image:
+    repository: ""          # (Optional) image for the cronjob; if empty, defaults to the main image
+    tag: ""                 # (Optional) image tag for the cronjob
+  command: []               # (Optional) command override for the cronjob container
+  args: []                  # (Optional) args for the cronjob container
+  env: []                   # Environment variables specifically for the cronjob
+
+# Horizontal Pod Autoscaler (HPA) configuration
+hpa:
+  enabled: false            # Enable HPA
+  minReplicas: 1            # Minimum number of pods
+  maxReplicas: 3            # Maximum number of pods
+  targetCPUUtilizationPercentage: 80    # Target average CPU utilization (%)
+  targetMemoryUtilizationPercentage: null # Target average memory utilization (%), if any
+
+# Azure Key Vault CSI Driver integration
+azureKeyVault:
+  enabled: false            # Enable mounting secrets from Azure Key Vault via CSI driver
+  usePodIdentity: false     # If true, use Azure AD Pod Identity (deprecated approach)
+  useVMManagedIdentity: false  # If true, use the AKS VM's managed identity
+  userAssignedIdentityID: ""   # (Optional) Client ID of user-assigned managed identity (if using)
+  keyVaultName: ""          # Name of the Azure Key Vault
+  tenantId: ""              # Azure Tenant ID for the Key Vault
+  secrets: []               # List of secret objects to fetch from Key Vault
+  # Example secret object configuration:
+  # secrets:
+  #   - objectName: "my-secret-name"
+  #     objectType: secret         # secret, key, or cert
+  #     objectVersion: ""          # specific version (optional)
+  #     secretKey: "my-secret-key" # name of the key in the mounted file or synced secret (defaults to objectName if not specified)
+  mountPath: "/mnt/secrets"  # Mount path in the container for the secrets
+  syncSecrets: false         # If true, sync the secrets to a Kubernetes Secret as well
+  syncSecretName: ""         # Name of the Kubernetes secret to create (if syncSecrets is true; if empty, a default name will be used)
