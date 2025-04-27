@@ -39,6 +39,6 @@ jobs:
       - name: Helm Template Dry Run (Render Only)
         run: |
           helm upgrade --install dry-run-release charts/base-app \
-              --namespace default \
+              --namespace dev \
               -f charts/base-app/values.yaml \
               --dry-run --debug

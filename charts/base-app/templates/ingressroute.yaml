@@ -4,13 +4,9 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: {{ include "base-app.fullname" . }}
+  name: {{ include "base-app.fullname" . }}-ingressroute
   labels:
     {{ include "base-app.labels" . | nindent 4 }}
-  {{- if .Values.ingress.annotations }}
-  annotations:
-    {{ toYaml .Values.ingress.annotations | nindent 4 }}
-  {{- end }}
 spec:
   entryPoints:
     {{- range .Values.ingress.entryPoints }}
@@ -20,16 +16,13 @@ spec:
     - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
       kind: Rule
       services:
-        - name: {{ include "base-app.fullname" . }}
+        - name: {{ include "base-app.fullname" . }}  # 👈 must match the `service.metadata.name`
           port: {{ .Values.service.port }}
   {{- if .Values.ingress.tls.enabled }}
   tls:
     {{- if .Values.ingress.tls.secretName }}
-    secretName: "{{ .Values.ingress.tls.secretName }}"
+    secretName: {{ .Values.ingress.tls.secretName }}
     {{- else if .Values.ingress.tls.certResolver }}
-    certResolver: "{{ .Values.ingress.tls.certResolver }}"
-    {{- else }}
-    {}  # TLS enabled with no secret or resolver: uses default Traefik certificate
+    certResolver: {{ .Values.ingress.tls.certResolver }}
     {{- end }}
   {{- end }}
-{{- end }}

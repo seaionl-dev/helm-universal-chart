@@ -43,7 +43,7 @@ containerPort: 80
 # Ingress (Traefik IngressRoute) configuration
 ingress:
   enabled: true        # Enable Traefik IngressRoute
-  host: ""             # Hostname for the ingress route (e.g., myapp.example.com)
+  host: "dummy.certping.ai"             # Hostname for the ingress route (e.g., myapp.example.com)
   path: /              # Path prefix for the ingress route
   entryPoints:         # Traefik entry points to listen on
     - web
