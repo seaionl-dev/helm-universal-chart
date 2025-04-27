@@ -1,31 +1,5 @@
 # AKS Universal Application Helm Chart
 
-## Repository Structure
-
-```plaintext
-charts/
-└── base-app/
-    ├── Chart.yaml
-    ├── values.yaml
-    ├── templates/
-    │   ├── _helpers.tpl
-    │   ├── deployment.yaml
-    │   ├── service.yaml
-    │   ├── ingressroute.yaml
-    │   ├── pvc.yaml
-    │   ├── serviceaccount.yaml
-    │   ├── secretproviderclass.yaml
-    │   ├── job.yaml
-    │   ├── cronjob.yaml
-    │   └── hpa.yaml
-    └── README.md
-.github/
-└── workflows/
-    └── publish.yaml
-```
-
-## File Contents
-
 ### charts/base-app/Chart.yaml
 
 ```yaml
