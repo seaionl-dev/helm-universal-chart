@@ -55,12 +55,29 @@ jobs:
               --namespace dev \
               -f charts/base-app/values.yaml \
               --dry-run --debug
+      - name: Bump Chart Version
+        run: |
+          CHART_YAML="charts/base-app/Chart.yaml"
+          CURRENT_VERSION=$(yq '.version' $CHART_YAML)
+          echo "Current version: $CURRENT_VERSION"
+          
+          # Extract major, minor, patch
+          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+          PATCH_NEXT=$((patch + 1))
+          NEW_VERSION="${major}.${minor}.${PATCH_NEXT}"
+          
+          echo "Bumping to version: $NEW_VERSION"
+          yq eval ".version = \"${NEW_VERSION}\"" -i $CHART_YAML
       - name: Package and index Helm chart
         run: |
           mkdir -p docs
           helm lint charts/base-app
           helm package charts/base-app --destination docs
-          helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart
+          if [ -f docs/index.yaml ]; then
+            helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart --merge docs/index.yaml
+          else
+            helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart
+          fi
 
       - name: Publish to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
