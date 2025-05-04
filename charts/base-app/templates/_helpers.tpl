@@ -28,9 +28,7 @@ helm.sh/chart: {{ include "base-app.chart" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
-{{/*
-Return the name of the service account
-*/}}
+
 {{- define "base-app.serviceAccountName" -}}
 {{- if .Values.serviceAccount.name }}
 {{ .Values.serviceAccount.name }}
