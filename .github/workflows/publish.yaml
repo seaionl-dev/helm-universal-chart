@@ -55,3 +55,16 @@ jobs:
               --namespace dev \
               -f charts/base-app/values.yaml \
               --dry-run --debug
+      - name: Package and index Helm chart
+        run: |
+          mkdir -p docs
+          helm lint charts/base-app
+          helm package charts/base-app --destination docs
+          helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart
+
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          publish_branch: gh-pages
