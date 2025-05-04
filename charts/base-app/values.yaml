@@ -25,6 +25,8 @@ imagePullSecrets: []     # (Optional) list of Kubernetes secrets for pulling ima
 serviceAccount:
   create: true            # Whether to create a new ServiceAccount
   name: ""               # Name of the ServiceAccount to use. If not set and create=true, a name is generated
+  annotations:
+    azure.workload.identity/client-id: "12herjgkjhe"
 
 # Pod annotations (e.g., for monitoring or sidecar injection)
 podAnnotations: {}        # Optional annotations to add to the pod metadata
