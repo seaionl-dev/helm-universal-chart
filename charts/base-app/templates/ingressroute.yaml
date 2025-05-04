@@ -1,10 +1,9 @@
-# IngressRoute Template (Traefik)
-# Creates a Traefik IngressRoute for the application if enabled.
 {{- if .Values.ingress.enabled }}
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: {{ include "base-app.fullname" . }}-ingressroute
+  namespace: {{ .Release.Namespace }}
   labels:
     {{ include "base-app.labels" . | nindent 4 }}
 spec:
@@ -16,8 +15,15 @@ spec:
     - match: Host(`{{ .Values.ingress.host }}`) && PathPrefix(`{{ .Values.ingress.path }}`)
       kind: Rule
       services:
-        - name: {{ include "base-app.fullname" . }}  # 👈 must match the `service.metadata.name`
+        - name: {{ include "base-app.fullname" . }}
           port: {{ .Values.service.port }}
+  {{- if .Values.ingress.middlewares }}
+  middlewares:
+    {{- range .Values.ingress.middlewares }}
+    - name: {{ .name }}
+      namespace: {{ .namespace | default $.Release.Namespace }}
+    {{- end }}
+  {{- end }}
   {{- if .Values.ingress.tls.enabled }}
   tls:
     {{- if .Values.ingress.tls.secretName }}
