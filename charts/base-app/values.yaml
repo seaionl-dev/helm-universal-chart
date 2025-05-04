@@ -6,6 +6,7 @@ nameOverride: ""        # Provide a name to override the chart's name for resour
 fullnameOverride: ""    # Provide a full name for resources (if set, it overrides the release-name and chart name combo)
 
 # Pass name space as per application
+defaultNamespace: ""
 
 namespace: dev    
 
