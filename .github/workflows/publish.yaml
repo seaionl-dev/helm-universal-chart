@@ -1,42 +1,55 @@
 name: Release Charts
+
 on:
   push:
     branches: [ main ]
+
 jobs:
   release:
     runs-on: azure-prod-runner-vmss
     permissions:
       contents: write
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
       - name: Install Helm
         uses: Azure/setup-helm@v3
         with:
-          version: latest
-      - name: Package chart
+          version: latest  # You can pin version for consistency
+
+      - name: Lint Helm Chart
         run: |
           helm lint charts/base-app
+
+      - name: Package Helm Chart
+        run: |
           helm package charts/base-app
-      - name: Helm Dry-Run Render Templates
+
+      - name: Render Templates (Static Check)
         run: |
           helm template my-release charts/base-app -f charts/base-app/values.yaml
-      # ✅ Azure login and AKS kubeconfig setup
-      - name: Configure kubectl
-        id: configure-kube
+
+      - name: Azure Login (MSI)
         run: |
           az login --identity
+
+      - name: Get AKS Credentials
+        run: |
           az aks get-credentials --name certping-aks-dev --resource-group certping-infra-dev --overwrite-existing
 
-      - uses: azure/use-kubelogin@v1
+      - name: Install kubelogin
+        uses: azure/use-kubelogin@v1
         with:
           kubelogin-version: "v0.0.24"
 
-      - name: setup kubectl for AKS
-        id: setup-kubectl1
+      - name: Convert kubeconfig for MSI
         run: |
           export KUBECONFIG=~/.kube/config
           kubelogin convert-kubeconfig -l msi
-      - name: Helm Template Dry Run (Render Only)
+
+      - name: Helm Upgrade (Dry-Run Render Test)
         run: |
           helm upgrade --install dry-run-release charts/base-app \
               --namespace dev \
