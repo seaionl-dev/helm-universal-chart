@@ -55,19 +55,19 @@ jobs:
               --namespace dev \
               -f charts/base-app/values.yaml \
               --dry-run --debug
-      - name: Bump Chart Version
-        run: |
-          CHART_YAML="charts/base-app/Chart.yaml"
-          CURRENT_VERSION=$(yq '.version' $CHART_YAML)
-          echo "Current version: $CURRENT_VERSION"
+      # - name: Bump Chart Version
+      #   run: |
+      #     CHART_YAML="charts/base-app/Chart.yaml"
+      #     CURRENT_VERSION=$(yq '.version' $CHART_YAML)
+      #     echo "Current version: $CURRENT_VERSION"
           
-          # Extract major, minor, patch
-          IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-          PATCH_NEXT=$((patch + 1))
-          NEW_VERSION="${major}.${minor}.${PATCH_NEXT}"
+      #     # Extract major, minor, patch
+      #     IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+      #     PATCH_NEXT=$((patch + 1))
+      #     NEW_VERSION="${major}.${minor}.${PATCH_NEXT}"
           
-          echo "Bumping to version: $NEW_VERSION"
-          yq eval ".version = \"${NEW_VERSION}\"" -i $CHART_YAML
+      #     echo "Bumping to version: $NEW_VERSION"
+      #     yq eval ".version = \"${NEW_VERSION}\"" -i $CHART_YAML
       - name: Package and index Helm chart
         run: |
           mkdir -p docs
