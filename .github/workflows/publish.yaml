@@ -1,87 +1,94 @@
-name: Release Charts
+  name: Release Charts
 
-on:
-  push:
-    branches: [ main ]
+  on:
+    push:
+      branches: [ main ]
 
-jobs:
-  release:
-    runs-on: azure-prod-runner-vmss
-    permissions:
-      contents: write
+  jobs:
+    release:
+      runs-on: azure-prod-runner-vmss
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      steps:
+        - name: Checkout Repository
+          uses: actions/checkout@v3
+        - name: Install Helm
+          uses: Azure/setup-helm@v3
+          with:
+            version: latest  # You can pin version for consistency
+        - name: configure jq
+          uses: stefanzweifel/git-auto-commit-action@v4 
+        - name: Lint Helm Chart
+          run: |
+            helm lint charts/base-app
 
-      - name: Install Helm
-        uses: Azure/setup-helm@v3
-        with:
-          version: latest  # You can pin version for consistency
+        - name: Package Helm Chart
+          run: |
+            helm package charts/base-app
 
-      - name: Lint Helm Chart
-        run: |
-          helm lint charts/base-app
+        - name: Render Templates (Static Check)
+          run: |
+            helm template my-release charts/base-app -f charts/base-app/values.yaml
 
-      - name: Package Helm Chart
-        run: |
-          helm package charts/base-app
+        - name: Azure Login (MSI)
+          run: |
+            az login --identity
 
-      - name: Render Templates (Static Check)
-        run: |
-          helm template my-release charts/base-app -f charts/base-app/values.yaml
+        - name: Get AKS Credentials
+          run: |
+            az aks get-credentials --name certping-aks-dev --resource-group certping-infra-dev --overwrite-existing
 
-      - name: Azure Login (MSI)
-        run: |
-          az login --identity
+        - name: Install kubelogin
+          uses: azure/use-kubelogin@v1
+          with:
+            kubelogin-version: "v0.0.24"
 
-      - name: Get AKS Credentials
-        run: |
-          az aks get-credentials --name certping-aks-dev --resource-group certping-infra-dev --overwrite-existing
+        - name: Convert kubeconfig for MSI
+          run: |
+            export KUBECONFIG=~/.kube/config
+            kubelogin convert-kubeconfig -l msi
 
-      - name: Install kubelogin
-        uses: azure/use-kubelogin@v1
-        with:
-          kubelogin-version: "v0.0.24"
+        - name: Helm Upgrade (Dry-Run Render Test)
+          run: |
+            helm upgrade --install dry-run-release charts/base-app \
+                --namespace dev \
+                -f charts/base-app/values.yaml \
+                --dry-run --debug
+         # --- Stage 5: Version Management ---
+        - name: Bump Chart Version
+          id: versioning
+          run: |
+            CURRENT_VERSION=$(yq '.version' charts/base-app/Chart.yaml)
+            echo "Current version: $CURRENT_VERSION"
+            
+            # Auto-increment patch version
+            IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
+            NEW_VERSION="${major}.${minor}.$((patch + 1))"
+            
+            echo "New version: $NEW_VERSION"
+            yq eval ".version = \"${NEW_VERSION}\"" -i charts/base-app/Chart.yaml
+            
+            echo "::set-output name=new_version::${NEW_VERSION}"
 
-      - name: Convert kubeconfig for MSI
-        run: |
-          export KUBECONFIG=~/.kube/config
-          kubelogin convert-kubeconfig -l msi
-
-      - name: Helm Upgrade (Dry-Run Render Test)
-        run: |
-          helm upgrade --install dry-run-release charts/base-app \
-              --namespace dev \
-              -f charts/base-app/values.yaml \
-              --dry-run --debug
-      # - name: Bump Chart Version
-      #   run: |
-      #     CHART_YAML="charts/base-app/Chart.yaml"
-      #     CURRENT_VERSION=$(yq '.version' $CHART_YAML)
-      #     echo "Current version: $CURRENT_VERSION"
-          
-      #     # Extract major, minor, patch
-      #     IFS='.' read -r major minor patch <<< "$CURRENT_VERSION"
-      #     PATCH_NEXT=$((patch + 1))
-      #     NEW_VERSION="${major}.${minor}.${PATCH_NEXT}"
-          
-      #     echo "Bumping to version: $NEW_VERSION"
-      #     yq eval ".version = \"${NEW_VERSION}\"" -i $CHART_YAML
-      - name: Package and index Helm chart
-        run: |
-          mkdir -p docs
-          helm lint charts/base-app
-          helm package charts/base-app --destination docs
-          if [ -f docs/index.yaml ]; then
-            helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart --merge docs/index.yaml
-          else
-            helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart
-          fi
-
-      - name: Publish to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          publish_branch: gh-pages
+        # --- Stage 6: Package & Publish ---
+        - name: Package and Index Helm Chart
+          run: |
+            mkdir -p docs
+            helm package charts/base-app --destination docs
+            
+            # Merge with existing index if available
+            if [ -f docs/index.yaml ]; then
+              helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart --merge docs/index.yaml
+            else
+              helm repo index docs --url https://seaionl-dev.github.io/helm-universal-chart
+            fi
+            
+            # Add release metadata
+            echo "Version ${{ steps.versioning.outputs.new_version }} built on $(date)" > docs/build-info.txt
+        - name: Publish to GitHub Pages
+          uses: peaceiris/actions-gh-pages@v3
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            publish_dir: ./docs
+            publish_branch: gh-pages
+            force_orphan: true  # Keep history clean
+            keep_files: false   # Remove old versions
