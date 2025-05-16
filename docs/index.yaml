@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  base-app:
+  - apiVersion: v2
+    appVersion: 1.1.0
+    created: "2025-05-15T20:40:40.913346-05:00"
+    description: A Helm chart for deploying applications on AKS
+    digest: 5118cd019ac1e6a292e451ce17bc085823c9d4b57bbbf2908cd03ccaea1cdea4
+    name: base-app
+    type: application
+    urls:
+    - https://seaionl-dev.github.io/helm-universal-chart/base-app-0.2.0.tgz
+    version: 0.2.0
+generated: "2025-05-15T20:40:40.912686-05:00"
