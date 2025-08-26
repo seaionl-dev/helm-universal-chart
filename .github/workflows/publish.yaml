@@ -6,7 +6,7 @@
 
   jobs:
     release:
-      runs-on: [azure-green-runner-vmss]
+      runs-on: [action-runner]
 
       steps:
         - name: Checkout Repository
