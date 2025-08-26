@@ -23,7 +23,7 @@ imagePullSecrets: []     # (Optional) list of Kubernetes secrets for pulling ima
 
 # Service account configuration
 serviceAccount:
-  create: true                      # Whether to create a new ServiceAccount
+  create: false                      # Whether to create a new ServiceAccount
   name: ""                          # Name of the ServiceAccount to use. If not set and create=true, a name is generated
   automountServiceAccountToken: true  # Whether to auto-mount the API token for the ServiceAccount
   annotations:                      # Annotations to add to the ServiceAccount metadata
